@@ -158,7 +158,7 @@ int nfs_request(FAR struct nfsmount *nmp, int procnum,
     {
       error = -EOPNOTSUPP;
       ferr("ERROR: NFS authtype %d from server\n",
-           fxdr_unsigned(int, replyh.rpc_verfi.authtype));
+           fxdr_unsigned(int, replyh.rh.rpc_verfi.authtype));
       return error;
     }
 
