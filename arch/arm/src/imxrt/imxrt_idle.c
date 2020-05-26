@@ -188,7 +188,9 @@ void up_idle(void)
   /* Sleep until an interrupt occurs to save power. */
 
   BEGIN_IDLE();
+#ifndef CONFIG_IMXRT_ENET_PHYINIT
   asm("WFI");
+#endif
   END_IDLE();
 #endif
 }
