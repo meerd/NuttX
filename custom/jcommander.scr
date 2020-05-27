@@ -1,0 +1,7 @@
+unlock
+reset
+halt
+; #erase
+loadfile ../nuttx.hex
+qc
+exit
