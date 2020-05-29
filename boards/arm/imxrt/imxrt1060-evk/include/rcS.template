@@ -1,0 +1,4 @@
+echo "@Hello there!"
+
+nfsmount 192.168.178.18 /nfs /devnfs udp
+cat /nfs/test.txt
