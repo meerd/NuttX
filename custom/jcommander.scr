@@ -1,7 +1,6 @@
-unlock
-reset
-halt
-; #erase
+r ; reset
+h ; halt
+u ; unlock
 loadfile ../nuttx.hex
 qc
 exit
