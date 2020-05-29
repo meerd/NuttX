@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <sched.h>
+#include <queue.h>
 #include <errno.h>
 
 #include <nuttx/arch.h>
@@ -53,6 +54,14 @@
  *     2. Allocate the stack.  The pre-allocated stack is passed in argv.
  *     3. Activate the task. This must be done by calling nxtask_activate().
  *
+ *   Certain fields of the pre-allocated TCB may be set to change the
+ *   nature of the created task.  For example:
+ *
+ *     - Task type may be set in the TCB flags to create kernel thread
+ *     - If a custom stack is used, i.e., one allocated, managed, and freed
+ *       by the caller, then TCB_FLAG_CUSTOM_STACK should be set in the
+ *       TCB flags.
+ *
  * Input Parameters:
  *   tcb        - Address of the new task's TCB
  *   name       - Name of the new task (not used)
@@ -74,8 +83,8 @@
  ****************************************************************************/
 
 int nxtask_init(FAR struct tcb_s *tcb, const char *name, int priority,
-              FAR uint32_t *stack, uint32_t stack_size,
-              main_t entry, FAR char * const argv[])
+                FAR uint32_t *stack, uint32_t stack_size,
+                main_t entry, FAR char * const argv[])
 {
   FAR struct task_tcb_s *ttcb = (FAR struct task_tcb_s *)tcb;
   int ret;
@@ -135,4 +144,41 @@ errout_with_group:
 
 errout:
   return ret;
+}
+
+/****************************************************************************
+ * Name: nxtask_uninit
+ *
+ * Description:
+ *   Undo all operations on a TCB performed by task_init() and release the
+ *   TCB by calling kmm_free().  This is intended primarily to support
+ *   error recovery operations after a successful call to task_init() such
+ *   was when a subsequent call to task_activate fails.
+ *
+ *   Caution:  Freeing of the TCB itself might be an unexpected side-effect.
+ *   The stack will also be freed UNLESS TCB_FLAG_CUSTOM_STACK was set in
+ *   in the tcb->flags field when nxtask_init() was called.
+ *
+ * Input Parameters:
+ *   tcb - Address of the TCB initialized by task_init()
+ *
+ * Returned Value:
+ *   OK on success; negative error value on failure appropriately.
+ *
+ ****************************************************************************/
+
+void nxtask_uninit(FAR struct tcb_s *tcb)
+{
+  /* The TCB was added to the inactive task list by
+   * nxtask_setup_scheduler().
+   */
+
+  dq_rem((FAR dq_entry_t *)tcb, (FAR dq_queue_t *)&g_inactivetasks);
+
+  /* Release all resources associated with the TCB... Including the TCB
+   * itself.
+   */
+
+  nxsched_release_tcb((FAR struct tcb_s *)tcb,
+                      tcb->flags & TCB_FLAG_TTYPE_MASK);
 }
